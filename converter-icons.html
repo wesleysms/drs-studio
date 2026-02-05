@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Converter SVG para PNG</title>
+</head>
+<body>
+    <h2>Gerando ícones PNG...</h2>
+    <canvas id="canvas192" width="192" height="192"></canvas>
+    <canvas id="canvas512" width="512" height="512"></canvas>
+    <div id="status"></div>
+    
+    <script>
+        const svg192 = `<svg width="192" height="192" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
+          <rect width="192" height="192" rx="42" fill="#4f46e5"/>
+          <path d="M96 48L58 96H84V144L130 96H104V48H96Z" fill="white" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="96" cy="96" r="72" stroke="white" stroke-width="3" opacity="0.2"/>
+        </svg>`;
+        
+        const svg512 = `<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+          <rect width="512" height="512" rx="112" fill="#4f46e5"/>
+          <path d="M256 128L154 256H224V384L346 256H276V128H256Z" fill="white" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="256" cy="256" r="192" stroke="white" stroke-width="8" opacity="0.2"/>
+          <text x="256" y="440" font-family="Arial, sans-serif" font-size="48" font-weight="800" fill="white" text-anchor="middle">DRS</text>
+        </svg>`;
+        
+        function svgToPng(svgString, canvas) {
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            const blob = new Blob([svgString], {type: 'image/svg+xml'});
+            const url = URL.createObjectURL(blob);
+            
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0);
+                URL.revokeObjectURL(url);
+                
+                canvas.toBlob(function(blob) {
+                    const link = document.createElement('a');
+                    link.download = canvas.id === 'canvas192' ? 'icon-192.png' : 'icon-512.png';
+                    link.href = URL.createObjectURL(blob);
+                    link.click();
+                    
+                    document.getElementById('status').innerHTML += `<p>✓ ${link.download} gerado com sucesso!</p>`;
+                });
+            };
+            
+            img.src = url;
+        }
+        
+        // Executar conversão automaticamente
+        setTimeout(() => {
+            svgToPng(svg192, document.getElementById('canvas192'));
+            svgToPng(svg512, document.getElementById('canvas512'));
+        }, 500);
+    </script>
+</body>
+</html>

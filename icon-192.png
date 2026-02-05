@@ -1,0 +1,16 @@
+/* Arquivo placeholder - Gere os ícones PNG usando:
+ * 1. Abra icon-192.html no navegador
+ * 2. Redimensione a janela para 192x192
+ * 3. Tire uma captura de tela ou use F12 > Screenshot
+ * 4. Salve como icon-192.png
+ * 
+ * Ou use ferramentas online:
+ * - https://realfavicongenerator.net/
+ * - https://favicon.io/
+ * 
+ * Ou use o comando ImageMagick:
+ * convert icon-192.svg icon-192.png
+ * convert icon-512.svg icon-512.png
+ */
+
+console.log("Ícone 192x192 - Por favor, gere manualmente");

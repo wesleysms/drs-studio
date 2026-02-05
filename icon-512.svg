@@ -1,0 +1,6 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="112" fill="#4f46e5"/>
+  <path d="M256 128L154 256H224V384L346 256H276V128H256Z" fill="white" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="256" cy="256" r="192" stroke="white" stroke-width="8" opacity="0.2"/>
+  <text x="256" y="440" font-family="Arial, sans-serif" font-size="48" font-weight="800" fill="white" text-anchor="middle">DRS</text>
+</svg>

@@ -1,0 +1,30 @@
+# IDEs e Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporários
+*.log
+*.tmp
+.cache/
+
+# Build (caso adicione build process)
+dist/
+build/
+.parcel-cache/
+
+# Dependências (caso adicione npm)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Backup local
+*.backup
+*.bak

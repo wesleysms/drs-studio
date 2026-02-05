@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="description" content="Sistema Executivo de Gestão de Processos Judiciais - DRS Executive Studio v3.26">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="DRS Studio">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.webmanifest">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    
+    <title>DRS | Executive Studio v3.26 (PWA)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f0f4f8; color: #0f172a; }
+        .glass { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.6); }
+        .card-shadow { box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.12); }
+        .meta-gradient { background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%); }
+        .daily-gradient { background: linear-gradient(90deg, #059669 0%, #0ea5e9 100%); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+        
+        .btn-cat { transition: all 0.2s ease; opacity: 0.35; cursor: pointer; }
+        .btn-cat:hover { opacity: 0.8; transform: scale(1.1); }
+        .btn-cat.active { opacity: 1; transform: scale(1.2); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+
+        /* Estilos do Modal */
+        .modal-overlay { background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
+        .modal-content { animation: modalSlide 0.3s ease-out; }
+        @keyframes modalSlide { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .card-interactive { cursor: pointer; transition: all 0.2s ease; }
+        .card-interactive:hover { transform: translateY(-4px); box-shadow: 0 15px 30px -5px rgba(0,0,0,0.15); }
+        .card-interactive:active { transform: scale(0.98); }
+        
+        /* PWA Install Banner */
+        .install-banner { 
+            position: fixed; 
+            bottom: 20px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            z-index: 1000;
+            animation: slideUp 0.4s ease-out;
+        }
+        @keyframes slideUp { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
+    </style>
+</head>
+<body class="overflow-x-hidden">
+
+    <!-- PWA Install Banner (opcional) -->
+    <div id="install-banner" class="install-banner hidden">
+        <div class="bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border-t-4 border-indigo-600">
+            <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0l-4 4m4-4v12"/>
+            </svg>
+            <div>
+                <p class="text-sm font-black uppercase tracking-widest">Instalar DRS Studio</p>
+                <p class="text-[10px] text-slate-400 font-bold">Use offline como app nativo</p>
+            </div>
+            <button onclick="instalarPWA()" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition">Instalar</button>
+            <button onclick="fecharBannerInstall()" class="text-slate-400 hover:text-white text-xl font-bold ml-2">×</button>
+        </div>
+    </div>
+
+    <div class="flex flex-col lg:flex-row min-h-screen">
+        
+        <aside class="w-full lg:w-80 glass border-r border-slate-300 p-6 space-y-6 lg:sticky lg:top-0 lg:h-screen overflow-y-auto z-20">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-indigo-700 rounded-xl flex items-center justify-center shadow-xl shadow-indigo-200">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <h1 class="text-xl font-extrabold tracking-tighter uppercase text-slate-900">DRS <span class="text-indigo-700">Studio</span></h1>
+            </div>
+
+            <div class="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 space-y-3">
+                <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest text-center italic">Sessão</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="exportarBackup()" class="flex flex-col items-center p-3 bg-white border border-slate-200 rounded-xl hover:bg-indigo-600 hover:text-white transition group card-shadow">
+                        <svg class="w-5 h-5 text-indigo-500 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                        <span class="text-[9px] font-black mt-1 uppercase text-slate-500 group-hover:text-white">Salvar</span>
+                    </button>
+                    <label class="flex flex-col items-center p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-emerald-600 hover:text-white transition group card-shadow">
+                        <svg class="w-5 h-5 text-emerald-500 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                        <span class="text-[9px] font-black mt-1 uppercase text-slate-500 group-hover:text-white">Abrir</span>
+                        <input type="file" id="importar-backup" class="hidden" accept=".json" onchange="importarBackup(event)">
+                    </label>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <textarea id="campo-colar" rows="4" class="w-full p-3 text-[11px] glass border border-slate-300 rounded-xl outline-none focus:ring-2 ring-indigo-500 font-medium" placeholder="Cole sua lista aqui..."></textarea>
+                <button onclick="processarTextoColado()" class="w-full py-3 bg-slate-900 text-white text-[11px] font-black rounded-xl hover:bg-indigo-600 transition shadow-lg tracking-widest">IMPORTAR LISTA</button>
+                <label class="flex items-center justify-center gap-2 p-2.5 bg-white border-2 border-dashed border-slate-300 rounded-xl cursor-pointer hover:border-indigo-500 transition group text-center shadow-sm">
+                    <span class="text-[10px] font-bold text-slate-500 group-hover:text-indigo-700 uppercase italic">Upload Planilha</span>
+                    <input type="file" id="upload-excel" class="hidden" accept=".xlsx, .xls">
+                </label>
+            </div>
+
+            <div class="pt-4 border-t border-slate-200 space-y-4">
+                <select id="filtro-unidade" onchange="atualizarInterface()" class="w-full p-3 glass border border-slate-300 rounded-xl text-[11px] font-bold outline-none text-slate-700"></select>
+                <select id="filtro-status" onchange="atualizarInterface()" class="w-full p-3 glass border border-slate-300 rounded-xl text-[11px] font-bold outline-none text-slate-700">
+                    <option value="">Status (Todos)</option>
+                    <option value="pendente">🔴 Pendentes</option>
+                    <option value="cumprido">🟢 Cumpridos</option>
+                </select>
+            </div>
+
+            <button onclick="limparBanco()" class="text-[10px] text-red-500 hover:text-red-700 font-black uppercase transition mt-auto pt-6 text-center w-full">Resetar Sistema</button>
+        </aside>
+
+        <main class="flex-1 p-6 lg:p-10 space-y-8 overflow-y-auto bg-[#f8fafc]">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-7 rounded-[3rem] card-shadow border-l-[12px] border-indigo-600">
+                    <div class="flex justify-between items-start">
+                        <div><p class="text-[11px] font-black text-indigo-400 uppercase tracking-widest">Meta Semanal</p><h2 class="text-5xl font-black text-slate-800 tracking-tighter" id="display-meta-semanal">125</h2></div>
+                        <div id="perc-semanal" class="text-4xl font-black text-indigo-700 drop-shadow-sm">0%</div>
+                    </div>
+                    <div class="h-4 w-full bg-slate-100 rounded-full mt-5 overflow-hidden shadow-inner"><div id="barra-semanal" class="h-full meta-gradient transition-all duration-1000 shadow-lg" style="width: 0%"></div></div>
+                    <p id="meta-label" class="text-[11px] text-slate-500 mt-3 font-black uppercase tracking-widest">Aguardando dados...</p>
+                </div>
+
+                <div class="bg-white p-7 rounded-[3rem] card-shadow border-l-[12px] border-emerald-500">
+                    <div class="flex justify-between items-start">
+                        <div><p class="text-[11px] font-black text-emerald-400 uppercase tracking-widest">Meta Diária</p><h2 class="text-5xl font-black text-slate-800 tracking-tighter"><span id="valor-meta-dia" class="text-emerald-600">0</span></h2></div>
+                        <div id="perc-diario" class="text-4xl font-black text-emerald-600 drop-shadow-sm">0%</div>
+                    </div>
+                    <div class="h-4 w-full bg-slate-100 rounded-full mt-5 overflow-hidden shadow-inner"><div id="barra-diaria" class="h-full daily-gradient transition-all duration-1000 shadow-lg" style="width: 0%"></div></div>
+                    <p id="meta-dia-label" class="text-[11px] text-slate-500 mt-3 font-black uppercase tracking-widest">0 / 0 CUMPRIDOS HOJE</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 md:grid-cols-6 gap-4">
+                <div onclick="abrirModalLista('rpv')" class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center card-interactive group" title="Ver Lista RPV">
+                    <span class="text-[9px] font-black text-indigo-400 uppercase group-hover:text-indigo-600">RPV/PREC</span>
+                    <p id="mini-rpv" class="text-2xl font-black text-indigo-700">0</p>
+                </div>
+                <div onclick="abrirModalLista('alvara')" class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center card-interactive group" title="Ver Lista Alvará">
+                    <span class="text-[9px] font-black text-emerald-400 uppercase group-hover:text-emerald-600">ALVARÁ</span>
+                    <p id="mini-alvara" class="text-2xl font-black text-emerald-700">0</p>
+                </div>
+                <div onclick="abrirModalLista('naomov')" class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center card-interactive group" title="Ver Lista Não Mov.">
+                    <span class="text-[9px] font-black text-amber-400 uppercase group-hover:text-amber-600">NÃO MOV.</span>
+                    <p id="mini-naomov" class="text-2xl font-black text-amber-600">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center">
+                    <span class="text-[9px] font-black text-slate-400 uppercase">TEMPO MÉDIO</span>
+                    <p id="kpi-tempo" class="text-lg font-black text-slate-700">--:--</p>
+                </div>
+                <div onclick="abrirModalLista('pendente')" class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center bg-[#fffbeb] ring-2 ring-amber-500/20 card-interactive group" title="Ver Pendentes">
+                    <span class="text-[9px] font-black text-amber-600 uppercase tracking-tighter group-hover:text-amber-800">PENDENTES</span>
+                    <p id="kpi-pendente" class="text-2xl font-black text-amber-600">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center bg-slate-50 border-slate-300">
+                    <span class="text-[9px] font-black text-slate-500 uppercase tracking-tighter">CARGA TOTAL</span>
+                    <p id="kpi-total" class="text-2xl font-black text-slate-800">0</p>
+                </div>
+            </div>
+
+            <div class="pt-4 space-y-6">
+                <div class="flex items-center gap-4">
+                    <h4 class="text-sm font-black text-[#64748b] uppercase tracking-[0.4em] min-w-fit">Performance por Unidade</h4>
+                    <div class="h-[2px] w-full bg-[#e2e8f0]"></div>
+                </div>
+                <div id="container-graficos-varas" class="space-y-6 min-h-[50px]"></div>
+            </div>
+
+            <div class="bg-white rounded-[2.5rem] card-shadow overflow-hidden border border-slate-200 mb-12">
+                <div class="p-8 bg-slate-50 border-b flex justify-between items-center">
+                    <h3 class="font-black text-slate-700 text-sm uppercase tracking-widest italic">Fila de Trabalho Completa</h3>
+                    <button onclick="exportarRelatorio()" class="text-[10px] font-black bg-indigo-700 text-white px-6 py-3 rounded-xl uppercase tracking-widest hover:bg-indigo-800 transition shadow-md">Exportar CSV</button>
+                </div>
+                <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                    <table class="w-full text-left text-sm border-collapse">
+                        <thead class="bg-white sticky top-0 z-10 border-b-2 border-slate-100 font-black text-[10px] uppercase text-slate-400">
+                            <tr>
+                                <th class="px-8 py-5 tracking-widest">NPU / Prioridade</th>
+                                <th class="px-8 py-5 tracking-widest">Vara Judiciária</th>
+                                <th class="px-8 py-5 text-center tracking-widest">Classificação</th>
+                                <th class="px-8 py-5 text-right tracking-widest">Ação / Registro</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-corpo" class="divide-y divide-slate-100 font-semibold"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="modal-lista" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2rem] w-full max-w-3xl max-h-[85vh] shadow-2xl modal-content flex flex-col overflow-hidden">
+            <div class="p-6 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <div>
+                        <h3 id="modal-titulo" class="text-xl font-black text-slate-800 uppercase tracking-tight">Lista Filtrada</h3>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Selecione para copiar</p>
+                    </div>
+                    <button id="btn-copiar-todos" class="bg-indigo-100 text-indigo-700 hover:bg-indigo-600 hover:text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition flex items-center gap-2 shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
+                        Copiar Lista
+                    </button>
+                </div>
+                <button onclick="fecharModal()" class="w-8 h-8 rounded-full bg-slate-200 text-slate-500 hover:bg-red-500 hover:text-white transition flex items-center justify-center font-bold">✕</button>
+            </div>
+            
+            <div class="overflow-y-auto p-6 space-y-3 bg-[#f8fafc]" id="modal-lista-conteudo"></div>
+            
+            <div class="p-4 bg-white border-t border-slate-100 text-center">
+                <button onclick="fecharModal()" class="text-[10px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'drs_v26_copyall';
+        let database = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        const DEFAULT_META = 125;
+        let chartInstances = {}; 
+
+        // --- PWA Install Handling ---
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-banner').classList.remove('hidden');
+        });
+
+        function instalarPWA() {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('PWA instalado com sucesso!');
+                }
+                deferredPrompt = null;
+                fecharBannerInstall();
+            });
+        }
+
+        function fecharBannerInstall() {
+            document.getElementById('install-banner').classList.add('hidden');
+        }
+
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA foi instalado!');
+            fecharBannerInstall();
+        });
+
+        // --- Service Worker Registration ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker registrado:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.error('Erro ao registrar Service Worker:', error);
+                    });
+            });
+        }
+
+        function salvarERecarregar() {
+            database = database.map(p => ({
+                ...p,
+                prioridade: (p.prioridade === undefined || p.prioridade === null) ? 0 : p.prioridade,
+                unidade: (p.unidade === 'undefined' || !p.unidade) ? 'Vara Judiciária' : p.unidade,
+                rpv: !!p.rpv, alvara: !!p.alvara, naomov: !!p.naomov
+            }));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(database));
+            const select = document.getElementById('filtro-unidade');
+            const unidades = [...new Set(database.map(p => p.unidade))].filter(u => u).sort();
+            const atual = select.value;
+            select.innerHTML = '<option value="">Todas as Unidades</option>';
+            unidades.forEach(u => select.innerHTML += `<option value="${u}" ${u === atual ? 'selected' : ''}>${u}</option>`);
+            atualizarInterface();
+        }
+
+        // --- FUNÇÕES MODAL + COPIAR TODOS ---
+        function abrirModalLista(tipo) {
+            const modal = document.getElementById('modal-lista');
+            const titulo = document.getElementById('modal-titulo');
+            const listaDiv = document.getElementById('modal-lista-conteudo');
+            const btnCopyAll = document.getElementById('btn-copiar-todos');
+            
+            let filtrados = [];
+            let nomeTipo = "";
+
+            if (tipo === 'rpv') { filtrados = database.filter(p => p.rpv); nomeTipo = "RPV / Precatórios"; }
+            else if (tipo === 'alvara') { filtrados = database.filter(p => p.alvara); nomeTipo = "Alvarás"; }
+            else if (tipo === 'naomov') { filtrados = database.filter(p => p.naomov); nomeTipo = "Sem Movimentação"; }
+            else if (tipo === 'pendente') { filtrados = database.filter(p => p.status === 'pendente'); nomeTipo = "Pendentes"; }
+
+            filtrados.sort((a,b) => a.prioridade - b.prioridade);
+
+            titulo.innerText = `${nomeTipo} (${filtrados.length})`;
+            
+            // Configurar botão copiar todos
+            btnCopyAll.onclick = function() {
+                const textoTodos = filtrados.map(p => p.npu).join('\n');
+                copiarTexto(textoTodos);
+            };
+
+            listaDiv.innerHTML = '';
+            if (filtrados.length === 0) {
+                listaDiv.innerHTML = `<div class="text-center py-10 text-slate-400 font-bold uppercase text-xs">Vazio</div>`;
+            } else {
+                filtrados.forEach(p => {
+                    listaDiv.innerHTML += `
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex justify-between items-center hover:border-indigo-400 transition group">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="bg-slate-100 text-slate-500 text-[9px] font-black px-2 py-0.5 rounded">#${p.prioridade}</span>
+                                    <span class="font-mono font-bold text-slate-700 text-sm">${p.npu}</span>
+                                </div>
+                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-tight">${p.unidade}</p>
+                            </div>
+                            <button onclick="copiarTexto('${p.npu}')" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                                Copiar
+                            </button>
+                        </div>
+                    `;
+                });
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function fecharModal() {
+            document.getElementById('modal-lista').classList.add('hidden');
+        }
+
+        // --- CORE ---
+        function atualizarInterface() {
+            const fU = document.getElementById('filtro-unidade').value;
+            const fS = document.getElementById('filtro-status').value;
+            const corpo = document.getElementById('tabela-corpo');
+            corpo.innerHTML = '';
+            
+            const filtrados = database.filter(p => (fU === '' || p.unidade === fU) && (fS === '' || p.status === fS)).sort((a,b) => a.prioridade - b.prioridade);
+
+            filtrados.forEach(p => {
+                const isC = p.status === 'cumprido';
+                corpo.innerHTML += `
+                    <tr class="hover:bg-indigo-50/20 transition border-b border-slate-100">
+                        <td class="px-8 py-6 font-mono font-extrabold text-slate-700 text-[12px]">
+                            <div class="flex items-center gap-3">
+                                <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-[10px] font-black italic">#${p.prioridade}</span>
+                                ${p.npu} <button onclick="copiarTexto('${p.npu}')" class="text-slate-300 hover:text-indigo-600 transition" title="Copiar NPU"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg></button>
+                            </div>
+                        </td>
+                        <td class="px-8 py-6 text-[11px] font-extrabold text-slate-500 uppercase tracking-tighter leading-snug">${p.unidade}</td>
+                        <td class="px-8 py-6 text-center">
+                            <div class="flex justify-center gap-5">
+                                <button onclick="alternarCategoria('${p.npu}', 'rpv')" class="btn-cat ${p.rpv ? 'active text-indigo-700' : 'text-slate-200'}" title="RPV / Precatório"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></button>
+                                <button onclick="alternarCategoria('${p.npu}', 'alvara')" class="btn-cat ${p.alvara ? 'active text-emerald-700' : 'text-slate-200'}" title="Alvará Judicial"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></button>
+                                <button onclick="alternarCategoria('${p.npu}', 'naomov')" class="btn-cat ${p.naomov ? 'active text-amber-600' : 'text-slate-200'}" title="Não Movimentado"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></button>
+                            </div>
+                        </td>
+                        <td class="px-8 py-6 text-right">
+                            <div class="flex flex-col items-end">
+                                <button onclick="alternarStatus('${p.npu}')" class="text-[11px] font-black tracking-widest ${isC ? 'text-red-500' : 'text-indigo-700'} uppercase">${isC ? 'REVERTER' : 'CONCLUIR'}</button>
+                                <span class="text-[9px] text-slate-400 font-black uppercase mt-1.5 bg-slate-100 px-2 py-0.5 rounded tracking-tighter">${p.data || 'Pendente'}</span>
+                            </div>
+                        </td>
+                    </tr>`;
+            });
+            atualizarCalculos(); 
+            setTimeout(desenharGraficosVaras, 100);
+        }
+
+        function atualizarCalculos() {
+            const hoje = new Date().toLocaleDateString('pt-BR');
+            const total = database.length;
+            const cTotal = database.filter(p => p.status === 'cumprido').length;
+            const cHoje = database.filter(p => p.status === 'cumprido' && p.data && p.data.includes(hoje)).length;
+            const pendenteConta = total - cTotal;
+
+            const safeSetText = (id, text) => { const el = document.getElementById(id); if(el) el.innerText = text; };
+            const safeSetStyle = (id, width) => { const el = document.getElementById(id); if(el) el.style.width = width; };
+
+            const metaAtual = (total > 0 && total < DEFAULT_META) ? total : DEFAULT_META;
+            safeSetText('display-meta-semanal', metaAtual);
+
+            const percS = metaAtual > 0 ? Math.min((cTotal / metaAtual) * 100, 100).toFixed(0) + '%' : '0%';
+            safeSetText('perc-semanal', percS);
+            safeSetStyle('barra-semanal', percS);
+            safeSetText('meta-label', `${cTotal} / ${metaAtual} CONCLUÍDOS`);
+
+            const mDia = Math.ceil(total / 5) || 25;
+            safeSetText('valor-meta-dia', mDia);
+            const pDia = mDia > 0 ? Math.min((cHoje / mDia) * 100, 100).toFixed(0) : 0;
+            safeSetText('perc-diario', pDia + '%');
+            safeSetStyle('barra-diaria', pDia + '%');
+            safeSetText('meta-dia-label', `${cHoje} / ${mDia} CUMPRIDOS HOJE`);
+
+            safeSetText('kpi-total', total);
+            safeSetText('kpi-pendente', pendenteConta);
+
+            safeSetText('mini-rpv', database.filter(p => p.rpv).length);
+            safeSetText('mini-alvara', database.filter(p => p.alvara).length);
+            safeSetText('mini-naomov', database.filter(p => p.naomov).length);
+
+            const procHoje = database.filter(p => p.status === 'cumprido' && p.data && p.data.includes(hoje));
+            if(procHoje.length >= 2) {
+                const ts = procHoje.map(p => {
+                    const [d, t] = p.data.split(', '); const [dia, mes, ano] = d.split('/'); const [h, m, s] = t.split(':');
+                    return new Date(ano, mes-1, dia, h, m, s).getTime();
+                }).sort();
+                const diffMin = (ts[ts.length-1] - ts[0]) / 60000;
+                const media = (diffMin / procHoje.length).toFixed(1);
+                safeSetText('kpi-tempo', media + " m/p");
+            } else { safeSetText('kpi-tempo', "--:--"); }
+        }
+
+        function desenharGraficosVaras() {
+            const container = document.getElementById('container-graficos-varas'); 
+            if (!container) return;
+            const varas = [...new Set(database.map(p => p.unidade))].filter(v => v);
+            Object.keys(chartInstances).forEach(k => { if(chartInstances[k]) chartInstances[k].destroy(); });
+            chartInstances = {};
+            container.innerHTML = '';
+
+            if(varas.length === 0) {
+                container.innerHTML = `<div class="bg-white p-12 rounded-[3rem] text-center card-shadow italic text-slate-400 font-bold uppercase text-xs tracking-widest border border-dashed border-slate-300">Aguardando dados...</div>`;
+                return;
+            }
+
+            let htmlBuffer = '';
+            varas.forEach((v, i) => {
+                const d = database.filter(p => p.unidade === v);
+                const c = d.filter(p => p.status === 'cumprido').length;
+                const p = d.length - c;
+                const perc = d.length > 0 ? Math.round((c / d.length) * 100) : 0;
+                htmlBuffer += `
+                    <div class="bg-white p-9 rounded-[3.5rem] flex items-center justify-between card-shadow border border-slate-50 hover:border-indigo-400 transition-all duration-300 mb-6">
+                        <div class="flex-1 pr-6 border-l-8 border-indigo-600 pl-6">
+                            <h5 class="text-2xl font-black text-[#1e293b] mb-1 leading-tight uppercase tracking-tight">${v}</h5>
+                            <p class="text-[12px] font-black text-[#64748b] uppercase tracking-[0.25em]">PRODUTIVIDADE: ${perc}%</p>
+                        </div>
+                        <div class="flex items-center gap-14 mr-10">
+                            <div class="text-center"><span class="block text-4xl font-black text-emerald-600 drop-shadow-sm">${c}</span><span class="text-[11px] font-black text-slate-400 uppercase tracking-widest">OK</span></div>
+                            <div class="text-center"><span class="block text-4xl font-black text-amber-500 drop-shadow-sm">${p}</span><span class="text-[11px] font-black text-slate-400 uppercase tracking-widest">PENDENTE</span></div>
+                        </div>
+                        <div class="w-24 h-24"><canvas id="chart-vara-final-${i}"></canvas></div>
+                    </div>`;
+            });
+            container.innerHTML = htmlBuffer;
+
+            setTimeout(() => {
+                varas.forEach((v, i) => {
+                    const d = database.filter(p => p.unidade === v);
+                    const c = d.filter(p => p.status === 'cumprido').length;
+                    const p = d.length - c;
+                    const ctx = document.getElementById(`chart-vara-final-${i}`);
+                    if (ctx) {
+                        chartInstances[i] = new Chart(ctx, { 
+                            type: 'doughnut', 
+                            data: { datasets: [{ data: [c, p], backgroundColor: ['#059669', '#f1f5f9'], borderWidth: 0 }] }, 
+                            options: { cutout: '80%', plugins: { legend: { display: false }, tooltip: { enabled: false } }, events: [], animation: { duration: 0 } } 
+                        });
+                    }
+                });
+            }, 50);
+        }
+
+        function alternarStatus(npu) {
+            const idx = database.findIndex(p => p.npu === npu);
+            if (idx < 0) return;
+            if(database[idx].status === 'pendente') {
+                database[idx].status = 'cumprido';
+                database[idx].data = new Date().toLocaleString('pt-BR');
+            } else {
+                database[idx].status = 'pendente';
+                database[idx].data = '';
+            }
+            salvarERecarregar();
+        }
+
+        function alternarCategoria(npu, tipo) {
+            const idx = database.findIndex(p => p.npu === npu);
+            if (idx < 0) return;
+            database[idx][tipo] = !database[idx][tipo];
+            salvarERecarregar();
+        }
+
+        function processarTextoColado() {
+            const raw = document.getElementById('campo-colar').value;
+            const regexNPU = /(\d{7}-\d{2}\.\d{4}\.8\.17\.\d{4})/g;
+            const matches = raw.match(regexNPU);
+            if(!matches) return alert("Nenhum NPU identificado.");
+            const partes = raw.split(regexNPU);
+            let novos = [];
+            for (let i = 1; i < partes.length; i += 2) {
+                const npu = partes[i];
+                const infoAntes = partes[i-1] || "";
+                const infoDepois = partes[i+1] || "";
+                const prioMatch = infoAntes.match(/(\d+)\s*-/);
+                const status = infoDepois.toLowerCase().includes("cumprido") ? "cumprido" : "pendente";
+                let unidade = "Vara Judiciária";
+                const splitUnidade = infoAntes.split(/TAREFA|ALVARÁ|MANIF\.|ORIGEM/);
+                if (splitUnidade.length > 1) { unidade = splitUnidade.pop().trim().replace(/^\d+\s*-\s*/, '').trim(); }
+                novos.push({ npu, unidade: unidade.substring(0, 80) || "Vara Geral", status, data: status === "cumprido" ? new Date().toLocaleString('pt-BR') : "", prioridade: prioMatch ? parseInt(prioMatch[1]) : 0, rpv: false, alvara: false, naomov: false });
+            }
+            database = novos; salvarERecarregar(); document.getElementById('campo-colar').value = "";
+        }
+
+        document.getElementById('upload-excel').addEventListener('change', function(e) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const data = XLSX.utils.sheet_to_json(XLSX.read(new Uint8Array(event.target.result), {type:'array'}).Sheets[XLSX.read(new Uint8Array(event.target.result), {type:'array'}).SheetNames[0]], {defval:""});
+                database = data.map(item => {
+                    const find = (n) => Object.keys(item).find(k => k.trim().toUpperCase() === n.toUpperCase());
+                    const s = (item[find("MUDANCA_TAREFA")] || 'pendente').toLowerCase().trim();
+                    const prio = String(item[find("ORIGEM")] || "").match(/^(\d+)/);
+                    return { npu: String(item[find("NPU")] || 'S/N').trim(), unidade: item[find("UNIDADE")] || 'Vara Não Identificada', status: s, data: s === "cumprido" ? new Date().toLocaleString('pt-BR') : "", prioridade: prio ? parseInt(prio[0]) : 0, rpv: false, alvara: false, naomov: false };
+                });
+                salvarERecarregar();
+            };
+            reader.readAsArrayBuffer(e.target.files[0]);
+        });
+
+        function exportarBackup() { if(database.length) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(database)], {type:'application/json'})); a.download = `Backup_DRS_${new Date().toLocaleDateString().replace(/\//g,'-')}.json`; a.click(); } }
+        function importarBackup(e) { const r = new FileReader(); r.onload = (ev) => { database = JSON.parse(ev.target.result); salvarERecarregar(); alert("Restaurado!"); }; r.readAsText(e.target.files[0]); }
+        function copiarTexto(t) { navigator.clipboard.writeText(t); const d = document.createElement('div'); d.className='fixed bottom-6 right-6 bg-slate-900 text-white px-6 py-4 rounded-2xl text-[11px] font-black z-50 border-t-4 border-indigo-600 shadow-2xl animate-bounce'; d.innerText='✓ COPIADO'; document.body.appendChild(d); setTimeout(()=>d.remove(),2000); }
+        function exportarRelatorio() { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(["NPU,UNIDADE,STATUS\n"+database.map(p=>`${p.npu},${p.unidade},${p.status}`).join("\n")], {type:'text/csv'})); a.download = 'Relatorio.csv'; a.click(); }
+        function limparBanco() { if(confirm("Apagar tudo?")) { localStorage.removeItem(STORAGE_KEY); location.reload(); } }
+        
+        window.onload = () => { salvarERecarregar(); };
+    </script>
+</body>
+</html>
